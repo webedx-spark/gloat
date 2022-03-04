@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gsamokovarov/gloat"
+	"github.com/webedx-spark/gloat"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -31,13 +31,16 @@ Options:
                 (default $DATABASE_SRC or db/migrations)
   -url          The database connection URL
                 (default $DATABASE_URL)
+  -versionTag   The version tag
+                (default $VERSION_TAG)
   -help         Show this message
 `
 
 type arguments struct {
-	url  string
-	src  string
-	rest []string
+	url        string
+	src        string
+	versionTag string
+	rest       []string
 }
 
 func main() {
@@ -81,7 +84,7 @@ func upCmd(args arguments) error {
 	appliedMigrations := map[int64]bool{}
 
 	for _, migration := range migrations {
-		fmt.Printf("Applying: %d...\n", migration.Version)
+		fmt.Printf("Applying: [%s] %d...\n", migration.VersionTag, migration.Version)
 
 		if err := gl.Apply(migration); err != nil {
 			return err
@@ -113,7 +116,7 @@ func downCmd(args arguments) error {
 		return nil
 	}
 
-	fmt.Printf("Reverting: %d...\n", migration.Version)
+	fmt.Printf("Reverting: [%s] %d...\n", migration.VersionTag, migration.Version)
 
 	if err := gl.Revert(migration); err != nil {
 		return err
@@ -167,8 +170,12 @@ func parseArguments() arguments {
 	}
 	srcUsage := `the folder with migrations`
 
+	versionTagDefault := os.Getenv("VERSION_TAG")
+	versionTagUsage := `version_tag of applied migrations`
+
 	flag.StringVar(&args.url, "url", urlDefault, urlUsage)
 	flag.StringVar(&args.src, "src", srcDefault, srcUsage)
+	flag.StringVar(&args.src, "versionTag", versionTagDefault, versionTagUsage)
 
 	flag.Usage = func() { fmt.Fprintf(os.Stderr, usage) }
 
@@ -196,9 +203,10 @@ func setupGloat(args arguments) (*gloat.Gloat, error) {
 	}
 
 	return &gloat.Gloat{
-		Store:    store,
-		Source:   gloat.NewFileSystemSource(args.src),
-		Executor: gloat.NewSQLExecutor(db),
+		Store:      store,
+		Source:     gloat.NewFileSystemSource(args.src),
+		Executor:   gloat.NewSQLExecutor(db),
+		VersionTag: args.versionTag,
 	}, nil
 }
 

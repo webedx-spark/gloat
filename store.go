@@ -16,6 +16,7 @@ type DatabaseStore struct {
 	db SQLTransactor
 
 	createTableStatement         string
+	createIndexStatement         string
 	insertMigrationStatement     string
 	removeMigrationStatement     string
 	selectAllMigrationsStatement string
@@ -31,7 +32,7 @@ func (s *DatabaseStore) Insert(migration *Migration, execer SQLExecer) error {
 		return err
 	}
 
-	_, err := execer.Exec(s.insertMigrationStatement, migration.Version)
+	_, err := execer.Exec(s.insertMigrationStatement, migration.Version, migration.VersionTag)
 	return err
 }
 
@@ -64,7 +65,7 @@ func (s *DatabaseStore) Collect() (migrations Migrations, err error) {
 
 	for rows.Next() {
 		migration := &Migration{}
-		if err = rows.Scan(&migration.Version); err != nil {
+		if err = rows.Scan(&migration.Version, &migration.VersionTag); err != nil {
 			return
 		}
 
@@ -75,8 +76,15 @@ func (s *DatabaseStore) Collect() (migrations Migrations, err error) {
 }
 
 func (s *DatabaseStore) ensureSchemaTableExists() error {
-	_, err := s.db.Exec(s.createTableStatement)
-	return err
+	if _, err := s.db.Exec(s.createTableStatement); err != nil {
+		return err
+	}
+
+	if _, err := s.db.Exec(s.createIndexStatement); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // NewPostgreSQLStore creates a Store for PostgreSQL.
@@ -85,17 +93,23 @@ func NewPostgreSQLStore(db SQLTransactor) Store {
 		db: db,
 		createTableStatement: `
 			CREATE TABLE IF NOT EXISTS schema_migrations (
-				version BIGINT PRIMARY KEY NOT NULL
+				version BIGINT PRIMARY KEY NOT NULL,
+				version_tag text
 			)`,
+		createIndexStatement: `
+			CREATE INDEX IF NOT EXISTS schema_migrations_version_tag 
+			ON schema_migrations (version_tag)
+			`,
 		insertMigrationStatement: `
-			INSERT INTO schema_migrations (version)
-			VALUES ($1)`,
+			INSERT INTO schema_migrations (version, version_tag)
+			VALUES ($1, $2)`,
 		removeMigrationStatement: `
 			DELETE FROM schema_migrations
 			WHERE version=$1`,
 		selectAllMigrationsStatement: `
-			SELECT version
-			FROM schema_migrations`,
+			SELECT version, version_tag
+			FROM schema_migrations
+			ORDER BY version DESC`,
 	}
 }
 
@@ -105,17 +119,23 @@ func NewMySQLStore(db SQLTransactor) Store {
 		db: db,
 		createTableStatement: `
 			CREATE TABLE IF NOT EXISTS schema_migrations (
-				version BIGINT PRIMARY KEY NOT NULL
+				version BIGINT PRIMARY KEY NOT NULL,
+				version_tag text
 			)`,
+		createIndexStatement: `
+			CREATE INDEX IF NOT EXISTS schema_migrations_version_tag 
+			ON schema_migrations (version_tag)
+			`,
 		insertMigrationStatement: `
-			INSERT INTO schema_migrations (version)
-			VALUES (?)`,
+			INSERT INTO schema_migrations (version, version_tag)
+			VALUES (?, ?)`,
 		removeMigrationStatement: `
 			DELETE FROM schema_migrations
 			WHERE version=?`,
 		selectAllMigrationsStatement: `
-			SELECT version
-			FROM schema_migrations`,
+			SELECT version, version_tag
+			FROM schema_migrations
+			ORDER BY version DESC`,
 	}
 }
 
@@ -126,15 +146,21 @@ func NewSQLite3Store(db SQLTransactor) Store {
 		createTableStatement: `
 			CREATE TABLE IF NOT EXISTS schema_migrations (
 				version BIGINT PRIMARY KEY NOT NULL
+				version_tag text
 			)`,
 		insertMigrationStatement: `
-			INSERT INTO schema_migrations (version)
-			VALUES (?)`,
+			INSERT INTO schema_migrations (version, version_tag)
+			VALUES (?, ?)`,
+		createIndexStatement: `
+			CREATE INDEX IF NOT EXISTS schema_migrations_version_tag 
+			ON schema_migrations (version_tag)
+			`,
 		removeMigrationStatement: `
 			DELETE FROM schema_migrations
 			WHERE version=?`,
 		selectAllMigrationsStatement: `
-			SELECT version
-			FROM schema_migrations`,
+			SELECT version, version_tag
+			FROM schema_migrations
+			ORDER BY version DESC`,
 	}
 }

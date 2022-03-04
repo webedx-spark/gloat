@@ -22,11 +22,12 @@ var (
 // determine the order of which the migrations would be executed. The path is
 // the name in a store.
 type Migration struct {
-	UpSQL   []byte
-	DownSQL []byte
-	Path    string
-	Version int64
-	Options MigrationOptions
+	UpSQL      []byte
+	DownSQL    []byte
+	Path       string
+	Version    int64
+	VersionTag string
+	Options    MigrationOptions
 }
 
 // Reversible returns true if the migration DownSQL content is present. E.g. if
@@ -155,6 +156,27 @@ func (m Migrations) Current() *Migration {
 	}
 
 	return m[len(m)-1]
+}
+
+// UnappliedMigrations selects the unapplied migrations from a Source. For a
+// migration to be unapplied it should not be present in the Store.
+func AppliedAfter(store Source, versionTag string) (Migrations, error) {
+	var appliedAfter Migrations
+	appliedMigrations, err := store.Collect()
+	if err != nil {
+		return nil, err
+	}
+
+	appliedMigrations.Sort()
+	for _, migration := range appliedMigrations {
+		if migration.VersionTag == versionTag {
+			break
+		}
+		appliedAfter = append(appliedAfter, migration)
+	}
+	appliedAfter.Sort()
+
+	return appliedAfter, nil
 }
 
 // UnappliedMigrations selects the unapplied migrations from a Source. For a
