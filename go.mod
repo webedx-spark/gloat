@@ -1,4 +1,4 @@
-module github.com/gsamokovarov/gloat
+module github.com/webedx-spark/gloat
 
 require (
 	github.com/go-sql-driver/mysql v1.4.0

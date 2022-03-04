@@ -16,6 +16,13 @@ type Gloat struct {
 	// Executor applies migrations and marks the newly applied migration
 	// versions in the Store.
 	Executor Executor
+
+	VersionTag string
+}
+
+// AppliedAfter returns migrations that were applied after a given version tag
+func (c *Gloat) AppliedAfter(versionTag string) (Migrations, error) {
+	return AppliedAfter(c.Store, c.Source, versionTag)
 }
 
 // Unapplied returns the unapplied migrations in the current gloat.
@@ -48,6 +55,7 @@ func (c *Gloat) Current() (*Migration, error) {
 		migration := availableMigrations[i]
 
 		if migration.Version == currentMigration.Version {
+			migration.VersionTag = currentMigration.VersionTag
 			return migration, nil
 		}
 	}
@@ -57,6 +65,7 @@ func (c *Gloat) Current() (*Migration, error) {
 
 // Apply applies a migration.
 func (c *Gloat) Apply(migration *Migration) error {
+	migration.VersionTag = c.VersionTag
 	return c.Executor.Up(migration, c.Store)
 }
 

@@ -1,6 +1,7 @@
 package gloat
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -22,11 +23,12 @@ var (
 // determine the order of which the migrations would be executed. The path is
 // the name in a store.
 type Migration struct {
-	UpSQL   []byte
-	DownSQL []byte
-	Path    string
-	Version int64
-	Options MigrationOptions
+	UpSQL      []byte
+	DownSQL    []byte
+	Path       string
+	Version    int64
+	VersionTag string
+	Options    MigrationOptions
 }
 
 // Reversible returns true if the migration DownSQL content is present. E.g. if
@@ -116,20 +118,48 @@ type Migrations []*Migration
 // Except selects migrations that does not exist in the current ones.
 func (m Migrations) Except(migrations Migrations) (excepted Migrations) {
 	// Mark the current transactions.
-	current := make(map[int64]bool)
+	current := make(map[int64]string)
 	for _, migration := range m {
-		current[migration.Version] = true
+		current[migration.Version] = migration.VersionTag
 	}
 
 	// Mark the ones in the migrations set, which we do have to get.
-	new := make(map[int64]bool)
+	new := make(map[int64]string)
 	for _, migration := range migrations {
-		new[migration.Version] = true
+		new[migration.Version] = migration.VersionTag
 	}
 
 	for _, migration := range migrations {
-		if new[migration.Version] && !current[migration.Version] {
+		_, will := new[migration.Version]
+		_, has := current[migration.Version]
+		if will && !has {
 			excepted = append(excepted, migration)
+		}
+	}
+
+	return
+}
+
+// Intersect selects migrations that does exist in the current ones.
+func (m Migrations) Intersect(migrations Migrations) (intersect Migrations) {
+	// Mark the current transactions.
+	store := make(map[int64]string)
+	for _, migration := range m {
+		store[migration.Version] = migration.VersionTag
+	}
+
+	// Mark the ones in the migrations set, which we do have to get.
+	source := make(map[int64]string)
+	for _, migration := range migrations {
+		source[migration.Version] = migration.VersionTag
+	}
+
+	for _, migration := range migrations {
+		_, will := source[migration.Version]
+		versionTag, has := store[migration.Version]
+		if will && has {
+			migration.VersionTag = versionTag
+			intersect = append(intersect, migration)
 		}
 	}
 
@@ -145,6 +175,9 @@ func (m Migrations) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
 // Sort is a convenience sorting method.
 func (m Migrations) Sort() { sort.Sort(m) }
 
+// ReverseSort is a convenience sorting method.
+func (m Migrations) ReverseSort() { sort.Sort(sort.Reverse(m)) }
+
 // Current returns the latest applied migration. Can be nil, if the migrations
 // are empty.
 func (m Migrations) Current() *Migration {
@@ -155,6 +188,37 @@ func (m Migrations) Current() *Migration {
 	}
 
 	return m[len(m)-1]
+}
+
+// AppliedAfter selects the applied migrations from a Store after a given versionTag.
+func AppliedAfter(store Source, source Source, versionTag string) (Migrations, error) {
+	var appliedAfter Migrations
+	appliedMigrations, err := store.Collect()
+	if err != nil {
+		return nil, err
+	}
+
+	found := false
+	for _, migration := range appliedMigrations {
+		if migration.VersionTag == versionTag {
+			found = true
+			break
+		}
+		appliedAfter = append(appliedAfter, migration)
+	}
+	if !found {
+		return nil, errors.New("versionTag not found")
+	}
+	appliedAfter.ReverseSort()
+
+	availableMigrations, err := source.Collect()
+	if err != nil {
+		return nil, err
+	}
+
+	intersect := appliedAfter.Intersect(availableMigrations)
+	intersect.ReverseSort()
+	return intersect, nil
 }
 
 // UnappliedMigrations selects the unapplied migrations from a Source. For a

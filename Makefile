@@ -1,7 +1,7 @@
 .PHONY: build
 build:
 	@mkdir -p bin
-	@go build -o bin/gloat github.com/gsamokovarov/gloat/cmd/gloat
+	@go build -o bin/gloat github.com/webedx-spark/gloat/cmd/gloat
 
 .PHONY: test
 test:

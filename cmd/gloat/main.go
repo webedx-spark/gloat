@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gsamokovarov/gloat"
+	"github.com/webedx-spark/gloat"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -22,22 +22,28 @@ const usage = `Usage gloat: [OPTION ...] [COMMAND ...]
 Gloat is a Go SQL migration utility.
 
 Commands:
-  new           Create a new migration folder
-  up            Apply new migrations
-  down          Revert the last applied migration
+  new                      Create a new migration folder
+  up                       Apply new migrations
+  down                     Revert the last applied migration
+  to <versionTag>          Migrate to versionTag. If there are migrations with that versionTag
+                           applied, they will be reverted. If the versionTag is the one used
+                           as option (or loaded from env) new migrations will be applied.
 
 Options:
   -src          The folder with migrations
-                (default $DATABASE_SRC or db/migrations)
+                (default $DATABASE_SRC or database/migrations)
   -url          The database connection URL
                 (default $DATABASE_URL)
+  -versionTag   The version tag
+                (default $VERSION_TAG)
   -help         Show this message
 `
 
 type arguments struct {
-	url  string
-	src  string
-	rest []string
+	url        string
+	src        string
+	versionTag string
+	rest       []string
 }
 
 func main() {
@@ -56,6 +62,8 @@ func main() {
 		err = downCmd(args)
 	case "new":
 		err = newCmd(args)
+	case "to":
+		err = toCmd(args)
 	default:
 		fmt.Fprintf(os.Stderr, usage)
 		os.Exit(2)
@@ -81,7 +89,7 @@ func upCmd(args arguments) error {
 	appliedMigrations := map[int64]bool{}
 
 	for _, migration := range migrations {
-		fmt.Printf("Applying: %d...\n", migration.Version)
+		fmt.Printf("Applying: [%s] %d...\n", args.versionTag, migration.Version)
 
 		if err := gl.Apply(migration); err != nil {
 			return err
@@ -92,6 +100,36 @@ func upCmd(args arguments) error {
 
 	if len(appliedMigrations) == 0 {
 		fmt.Printf("No migrations to apply\n")
+	}
+
+	return nil
+}
+
+func toCmd(args arguments) error {
+	gl, err := setupGloat(args)
+	if err != nil {
+		return err
+	}
+	if len(args.rest) < 2 {
+		return errors.New("migrate to requires a versionTag to migrate to")
+	}
+
+	versionTag := args.rest[1]
+	if args.versionTag == versionTag {
+		upCmd(args)
+	} else {
+		migrations, err := gl.AppliedAfter(versionTag)
+		if err != nil {
+			return err
+		}
+
+		for _, migration := range migrations {
+			fmt.Printf("\nReverting: [%s] %d...\n", migration.VersionTag, migration.Version)
+
+			if err := gl.Revert(migration); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -109,11 +147,11 @@ func downCmd(args arguments) error {
 	}
 
 	if migration == nil {
-		fmt.Printf("No migrations to apply\n")
+		fmt.Printf("No migrations to revert\n")
 		return nil
 	}
 
-	fmt.Printf("Reverting: %d...\n", migration.Version)
+	fmt.Printf("Reverting: [%s] %d...\n", migration.VersionTag, migration.Version)
 
 	if err := gl.Revert(migration); err != nil {
 		return err
@@ -163,12 +201,16 @@ func parseArguments() arguments {
 
 	srcDefault := os.Getenv("DATABASE_SRC")
 	if srcDefault == "" {
-		srcDefault = "db/migrations"
+		srcDefault = "database/migrations"
 	}
 	srcUsage := `the folder with migrations`
 
+	versionTagDefault := os.Getenv("VERSION_TAG")
+	versionTagUsage := `version_tag of applied migrations`
+
 	flag.StringVar(&args.url, "url", urlDefault, urlUsage)
 	flag.StringVar(&args.src, "src", srcDefault, srcUsage)
+	flag.StringVar(&args.versionTag, "versionTag", versionTagDefault, versionTagUsage)
 
 	flag.Usage = func() { fmt.Fprintf(os.Stderr, usage) }
 
@@ -196,9 +238,10 @@ func setupGloat(args arguments) (*gloat.Gloat, error) {
 	}
 
 	return &gloat.Gloat{
-		Store:    store,
-		Source:   gloat.NewFileSystemSource(args.src),
-		Executor: gloat.NewSQLExecutor(db),
+		Store:      store,
+		Source:     gloat.NewFileSystemSource(args.src),
+		Executor:   gloat.NewSQLExecutor(db),
+		VersionTag: args.versionTag,
 	}, nil
 }
 
