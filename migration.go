@@ -91,7 +91,7 @@ func MigrationFromBytes(path string, read func(string) ([]byte, error)) (*Migrat
 		Path:      path,
 		Version:   version,
 		Options:   options,
-		AppliedAt: time.UTC(),
+		AppliedAt: time.Now(),
 	}, nil
 }
 
