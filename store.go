@@ -32,7 +32,7 @@ func (s *DatabaseStore) Insert(migration *Migration, execer SQLExecer) error {
 		return err
 	}
 
-	_, err := execer.Exec(s.insertMigrationStatement, migration.Version, migration.VersionTag)
+	_, err := execer.Exec(s.insertMigrationStatement, migration.Version, migration.AppliedAt)
 	return err
 }
 
@@ -65,7 +65,7 @@ func (s *DatabaseStore) Collect() (migrations Migrations, err error) {
 
 	for rows.Next() {
 		migration := &Migration{}
-		if err = rows.Scan(&migration.Version, &migration.VersionTag); err != nil {
+		if err = rows.Scan(&migration.Version, &migration.AppliedAt); err != nil {
 			return
 		}
 
@@ -94,22 +94,22 @@ func NewPostgreSQLStore(db SQLTransactor) Store {
 		createTableStatement: `
 			CREATE TABLE IF NOT EXISTS schema_migrations (
 				version BIGINT PRIMARY KEY NOT NULL,
-				version_tag text
+				applied_at timestamp without time zone default (now() at time zone 'utc')
 			)`,
 		createIndexStatement: `
-			CREATE INDEX IF NOT EXISTS schema_migrations_version_tag 
-			ON schema_migrations (version_tag)
+			CREATE INDEX IF NOT EXISTS schema_migrations_applied_at
+			ON schema_migrations (applied_at)
 			`,
 		insertMigrationStatement: `
-			INSERT INTO schema_migrations (version, version_tag)
+			INSERT INTO schema_migrations (version, applied_at)
 			VALUES ($1, $2)`,
 		removeMigrationStatement: `
 			DELETE FROM schema_migrations
 			WHERE version=$1`,
 		selectAllMigrationsStatement: `
-			SELECT version, version_tag
+			SELECT version, applied_at
 			FROM schema_migrations
-			ORDER BY version DESC`,
+			ORDER BY applied_at DESC, version DESC`,
 	}
 }
 
@@ -120,14 +120,14 @@ func NewMySQLStore(db SQLTransactor) Store {
 		createTableStatement: `
 			CREATE TABLE IF NOT EXISTS schema_migrations (
 				version BIGINT PRIMARY KEY NOT NULL,
-				version_tag text
+				applied_at TIMESTAMP DEFAULT UTC_TIMESTAMP
 			)`,
 		createIndexStatement: `
-			CREATE INDEX IF NOT EXISTS schema_migrations_version_tag 
-			ON schema_migrations (version_tag)
+			CREATE INDEX IF NOT EXISTS schema_migrations_applied_at
+			ON schema_migrations (applied_at)
 			`,
 		insertMigrationStatement: `
-			INSERT INTO schema_migrations (version, version_tag)
+			INSERT INTO schema_migrations (version, applied_at)
 			VALUES (?, ?)`,
 		removeMigrationStatement: `
 			DELETE FROM schema_migrations
@@ -135,7 +135,7 @@ func NewMySQLStore(db SQLTransactor) Store {
 		selectAllMigrationsStatement: `
 			SELECT version, version_tag
 			FROM schema_migrations
-			ORDER BY version DESC`,
+			ORDER BY applied_at DESC, version DESC`,
 	}
 }
 
@@ -146,21 +146,21 @@ func NewSQLite3Store(db SQLTransactor) Store {
 		createTableStatement: `
 			CREATE TABLE IF NOT EXISTS schema_migrations (
 				version BIGINT PRIMARY KEY NOT NULL
-				version_tag text
+				applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
 			)`,
 		insertMigrationStatement: `
-			INSERT INTO schema_migrations (version, version_tag)
+			INSERT INTO schema_migrations (version, applied_at)
 			VALUES (?, ?)`,
 		createIndexStatement: `
-			CREATE INDEX IF NOT EXISTS schema_migrations_version_tag 
-			ON schema_migrations (version_tag)
+			CREATE INDEX IF NOT EXISTS schema_migrations_applied_at
+			ON schema_migrations (applied_at)
 			`,
 		removeMigrationStatement: `
 			DELETE FROM schema_migrations
 			WHERE version=?`,
 		selectAllMigrationsStatement: `
-			SELECT version, version_tag
+			SELECT version, applied_at
 			FROM schema_migrations
-			ORDER BY version DESC`,
+			ORDER BY applied_at DESC, version DESC`,
 	}
 }

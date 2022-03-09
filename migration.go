@@ -14,6 +14,7 @@ import (
 var (
 	now = time.Now().UTC()
 
+	ErrNotFound      = errors.New("version not found")
 	nameNormalizerRe = regexp.MustCompile(`([a-z])([A-Z])`)
 	versionFormat    = "20060102150405"
 )
@@ -23,12 +24,12 @@ var (
 // determine the order of which the migrations would be executed. The path is
 // the name in a store.
 type Migration struct {
-	UpSQL      []byte
-	DownSQL    []byte
-	Path       string
-	Version    int64
-	VersionTag string
-	Options    MigrationOptions
+	UpSQL     []byte
+	DownSQL   []byte
+	Path      string
+	Version   int64
+	Options   MigrationOptions
+	AppliedAt time.Time
 }
 
 // Reversible returns true if the migration DownSQL content is present. E.g. if
@@ -85,11 +86,12 @@ func MigrationFromBytes(path string, read func(string) ([]byte, error)) (*Migrat
 	}
 
 	return &Migration{
-		UpSQL:   upSQL,
-		DownSQL: downSQL,
-		Path:    path,
-		Version: version,
-		Options: options,
+		UpSQL:     upSQL,
+		DownSQL:   downSQL,
+		Path:      path,
+		Version:   version,
+		Options:   options,
+		AppliedAt: time.Time{0},
 	}, nil
 }
 
@@ -118,15 +120,15 @@ type Migrations []*Migration
 // Except selects migrations that does not exist in the current ones.
 func (m Migrations) Except(migrations Migrations) (excepted Migrations) {
 	// Mark the current transactions.
-	current := make(map[int64]string)
+	current := make(map[int64]time.Time)
 	for _, migration := range m {
-		current[migration.Version] = migration.VersionTag
+		current[migration.Version] = migration.AppliedAt
 	}
 
 	// Mark the ones in the migrations set, which we do have to get.
-	new := make(map[int64]string)
+	new := make(map[int64]time.Time)
 	for _, migration := range migrations {
-		new[migration.Version] = migration.VersionTag
+		new[migration.Version] = migration.AppliedAt
 	}
 
 	for _, migration := range migrations {
@@ -143,22 +145,22 @@ func (m Migrations) Except(migrations Migrations) (excepted Migrations) {
 // Intersect selects migrations that does exist in the current ones.
 func (m Migrations) Intersect(migrations Migrations) (intersect Migrations) {
 	// Mark the current transactions.
-	store := make(map[int64]string)
+	store := make(map[int64]time.Time)
 	for _, migration := range m {
-		store[migration.Version] = migration.VersionTag
+		store[migration.Version] = migration.AppliedAt
 	}
 
 	// Mark the ones in the migrations set, which we do have to get.
-	source := make(map[int64]string)
+	source := make(map[int64]time.Time)
 	for _, migration := range migrations {
-		source[migration.Version] = migration.VersionTag
+		source[migration.Version] = migration.AppliedAt
 	}
 
 	for _, migration := range migrations {
 		_, will := source[migration.Version]
-		versionTag, has := store[migration.Version]
+		appliedAt, has := store[migration.Version]
 		if will && has {
-			migration.VersionTag = versionTag
+			migration.AppliedAt = appliedAt
 			intersect = append(intersect, migration)
 		}
 	}
@@ -167,10 +169,20 @@ func (m Migrations) Intersect(migrations Migrations) (intersect Migrations) {
 }
 
 // Implementation for the sort.Sort interface.
+func (m Migrations) Len() int { return len(m) }
 
-func (m Migrations) Len() int           { return len(m) }
-func (m Migrations) Less(i, j int) bool { return m[i].Version < m[j].Version }
-func (m Migrations) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
+// Less will sort by AppliedAt. If equal will sort by Version
+func (m Migrations) Less(i, j int) bool {
+	if m[i].AppliedAt.Before(m[j].AppliedAt) {
+		return true
+	}
+	if m[i].AppliedAt.After(m[j].AppliedAt) {
+		return false
+	}
+	return m[i].Version < m[j].Version
+}
+
+func (m Migrations) Swap(i, j int) { m[i], m[j] = m[j], m[i] }
 
 // Sort is a convenience sorting method.
 func (m Migrations) Sort() { sort.Sort(m) }
@@ -190,8 +202,8 @@ func (m Migrations) Current() *Migration {
 	return m[len(m)-1]
 }
 
-// AppliedAfter selects the applied migrations from a Store after a given versionTag.
-func AppliedAfter(store Source, source Source, versionTag string) (Migrations, error) {
+// AppliedAfter selects the applied migrations from a Store after a given version.
+func AppliedAfter(store Source, source Source, version int64) (Migrations, error) {
 	var appliedAfter Migrations
 	appliedMigrations, err := store.Collect()
 	if err != nil {
@@ -200,15 +212,17 @@ func AppliedAfter(store Source, source Source, versionTag string) (Migrations, e
 
 	found := false
 	for _, migration := range appliedMigrations {
-		if migration.VersionTag == versionTag {
+		if migration.Version == version {
 			found = true
 			break
 		}
 		appliedAfter = append(appliedAfter, migration)
 	}
+
 	if !found {
-		return nil, errors.New("versionTag not found")
+		return nil, ErrNotFound
 	}
+
 	appliedAfter.ReverseSort()
 
 	availableMigrations, err := source.Collect()

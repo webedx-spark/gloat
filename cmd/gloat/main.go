@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/webedx-spark/gloat"
@@ -25,25 +26,22 @@ Commands:
   new                      Create a new migration folder
   up                       Apply new migrations
   down                     Revert the last applied migration
-  to <versionTag>          Migrate to versionTag. If there are migrations with that versionTag
-                           applied, they will be reverted. If the versionTag is the one used
-                           as option (or loaded from env) new migrations will be applied.
+  to <version>             Migrate to a given version (down to).
+  latest                   Latest migration in the source.
+  current                  Latest Applied migration.
 
 Options:
   -src          The folder with migrations
                 (default $DATABASE_SRC or database/migrations)
   -url          The database connection URL
                 (default $DATABASE_URL)
-  -versionTag   The version tag
-                (default $VERSION_TAG)
   -help         Show this message
 `
 
 type arguments struct {
-	url        string
-	src        string
-	versionTag string
-	rest       []string
+	url  string
+	src  string
+	rest []string
 }
 
 func main() {
@@ -64,6 +62,10 @@ func main() {
 		err = newCmd(args)
 	case "to":
 		err = toCmd(args)
+	case "latest":
+		err = latestCmd(args)
+	case "current":
+		err = currentCmd(args)
 	default:
 		fmt.Fprintf(os.Stderr, usage)
 		os.Exit(2)
@@ -89,7 +91,7 @@ func upCmd(args arguments) error {
 	appliedMigrations := map[int64]bool{}
 
 	for _, migration := range migrations {
-		fmt.Printf("Applying: [%s] %d...\n", args.versionTag, migration.Version)
+		fmt.Printf("Applying: %d...\n", migration.Version)
 
 		if err := gl.Apply(migration); err != nil {
 			return err
@@ -105,30 +107,67 @@ func upCmd(args arguments) error {
 	return nil
 }
 
+func latestCmd(args arguments) error {
+	gl, err := setupGloat(args)
+	if err != nil {
+		return err
+	}
+
+	latest, err := gl.Latest()
+	if err != nil {
+		return err
+	}
+
+	if latest != nil {
+		fmt.Printf("%d", latest.Version)
+	}
+	return nil
+}
+
+func currentCmd(args arguments) error {
+	gl, err := setupGloat(args)
+	if err != nil {
+		return err
+	}
+
+	current, err := gl.Current()
+	if err != nil {
+		return err
+	}
+
+	if current != nil {
+		fmt.Printf("%d", current.Version)
+	}
+	return nil
+}
+
 func toCmd(args arguments) error {
 	gl, err := setupGloat(args)
 	if err != nil {
 		return err
 	}
 	if len(args.rest) < 2 {
-		return errors.New("migrate to requires a versionTag to migrate to")
+		return errors.New("migrate to requires a version to migrate to")
 	}
 
-	versionTag := args.rest[1]
-	if args.versionTag == versionTag {
-		upCmd(args)
-	} else {
-		migrations, err := gl.AppliedAfter(versionTag)
-		if err != nil {
-			return err
+	version, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	migrations, err := gl.AppliedAfter(version)
+	if err != nil {
+		if err == gl.ErrNotFound {
+			return upCmd(args)
 		}
+		return err
+	}
 
-		for _, migration := range migrations {
-			fmt.Printf("\nReverting: [%s] %d...\n", migration.VersionTag, migration.Version)
+	for _, migration := range migrations {
+		fmt.Printf("\nReverting: %d...\n", migration.Version)
 
-			if err := gl.Revert(migration); err != nil {
-				return err
-			}
+		if err := gl.Revert(migration); err != nil {
+			return err
 		}
 	}
 
@@ -151,7 +190,7 @@ func downCmd(args arguments) error {
 		return nil
 	}
 
-	fmt.Printf("Reverting: [%s] %d...\n", migration.VersionTag, migration.Version)
+	fmt.Printf("Reverting: %d...\n", migration.Version)
 
 	if err := gl.Revert(migration); err != nil {
 		return err
@@ -205,12 +244,8 @@ func parseArguments() arguments {
 	}
 	srcUsage := `the folder with migrations`
 
-	versionTagDefault := os.Getenv("VERSION_TAG")
-	versionTagUsage := `version_tag of applied migrations`
-
 	flag.StringVar(&args.url, "url", urlDefault, urlUsage)
 	flag.StringVar(&args.src, "src", srcDefault, srcUsage)
-	flag.StringVar(&args.versionTag, "versionTag", versionTagDefault, versionTagUsage)
 
 	flag.Usage = func() { fmt.Fprintf(os.Stderr, usage) }
 
@@ -238,10 +273,9 @@ func setupGloat(args arguments) (*gloat.Gloat, error) {
 	}
 
 	return &gloat.Gloat{
-		Store:      store,
-		Source:     gloat.NewFileSystemSource(args.src),
-		Executor:   gloat.NewSQLExecutor(db),
-		VersionTag: args.versionTag,
+		Store:    store,
+		Source:   gloat.NewFileSystemSource(args.src),
+		Executor: gloat.NewSQLExecutor(db),
 	}, nil
 }
 

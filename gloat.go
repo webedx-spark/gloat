@@ -1,6 +1,8 @@
 package gloat
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
 // Gloat glues all the components needed to apply and revert
 // migrations.
@@ -16,18 +18,27 @@ type Gloat struct {
 	// Executor applies migrations and marks the newly applied migration
 	// versions in the Store.
 	Executor Executor
-
-	VersionTag string
 }
 
 // AppliedAfter returns migrations that were applied after a given version tag
-func (c *Gloat) AppliedAfter(versionTag string) (Migrations, error) {
-	return AppliedAfter(c.Store, c.Source, versionTag)
+func (c *Gloat) AppliedAfter(version int) (Migrations, error) {
+	return AppliedAfter(c.Store, c.Source, version)
 }
 
 // Unapplied returns the unapplied migrations in the current gloat.
 func (c *Gloat) Unapplied() (Migrations, error) {
 	return UnappliedMigrations(c.Store, c.Source)
+}
+
+// Latest returns the latest migration in the source.
+func (c *Gloat) Latest() (*Migration, error) {
+	availableMigrations, err := c.Source.Collect()
+	if err != nil {
+		return nil, err
+	}
+
+	latest := availableMigrations.Current()
+	return latest, nil
 }
 
 // Current returns the latest applied migration. Even if no error is returned,
@@ -55,7 +66,7 @@ func (c *Gloat) Current() (*Migration, error) {
 		migration := availableMigrations[i]
 
 		if migration.Version == currentMigration.Version {
-			migration.VersionTag = currentMigration.VersionTag
+			migration.AppliedAt = currentMigration.AppliedAt
 			return migration, nil
 		}
 	}
@@ -65,7 +76,6 @@ func (c *Gloat) Current() (*Migration, error) {
 
 // Apply applies a migration.
 func (c *Gloat) Apply(migration *Migration) error {
-	migration.VersionTag = c.VersionTag
 	return c.Executor.Up(migration, c.Store)
 }
 
