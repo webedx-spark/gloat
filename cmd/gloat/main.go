@@ -150,7 +150,7 @@ func toCmd(args arguments) error {
 		return errors.New("migrate to requires a version to migrate to")
 	}
 
-	version, err := strconv.ParseInt(s, 10, 64)
+	version, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil {
 		return err
 	}
