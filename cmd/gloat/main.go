@@ -29,6 +29,7 @@ Commands:
   to <version>             Migrate to a given version (down to).
   latest                   Latest migration in the source.
   current                  Latest Applied migration.
+  present                  List all present versions.
 
 Options:
   -src          The folder with migrations
@@ -66,6 +67,8 @@ func main() {
 		err = latestCmd(args)
 	case "current":
 		err = currentCmd(args)
+	case "present":
+		err = presentCmd(args)
 	default:
 		fmt.Fprintf(os.Stderr, usage)
 		os.Exit(2)
@@ -124,6 +127,27 @@ func latestCmd(args arguments) error {
 	return nil
 }
 
+func presentCmd(args arguments) error {
+	gl, err := setupGloat(args)
+	if err != nil {
+		return err
+	}
+
+	migrations, err := gl.Present()
+	if err != nil {
+		return err
+	}
+
+	for i, m := range migrations {
+		fmt.Printf("%d", m.Version)
+		if i != len(migrations)-1 {
+			fmt.Print(", ")
+		}
+	}
+
+	return nil
+}
+
 func currentCmd(args arguments) error {
 	gl, err := setupGloat(args)
 	if err != nil {
@@ -150,14 +174,14 @@ func toCmd(args arguments) error {
 		return errors.New("migrate to requires a version to migrate to")
 	}
 
-	version, err := strconv.ParseInt(args[1], 10, 64)
+	version, err := strconv.ParseInt(args.rest[1], 10, 64)
 	if err != nil {
 		return err
 	}
 
 	migrations, err := gl.AppliedAfter(version)
 	if err != nil {
-		if err == gl.ErrNotFound {
+		if err == gloat.ErrNotFound {
 			return upCmd(args)
 		}
 		return err

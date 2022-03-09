@@ -25,6 +25,11 @@ func (c *Gloat) AppliedAfter(version int64) (Migrations, error) {
 	return AppliedAfter(c.Store, c.Source, version)
 }
 
+// Present returns all available migrations.
+func (c *Gloat) Present() (Migrations, error) {
+	return c.Source.Collect()
+}
+
 // Unapplied returns the unapplied migrations in the current gloat.
 func (c *Gloat) Unapplied() (Migrations, error) {
 	return UnappliedMigrations(c.Store, c.Source)
