@@ -21,7 +21,7 @@ type Gloat struct {
 }
 
 // AppliedAfter returns migrations that were applied after a given version tag
-func (c *Gloat) AppliedAfter(version int) (Migrations, error) {
+func (c *Gloat) AppliedAfter(version int64) (Migrations, error) {
 	return AppliedAfter(c.Store, c.Source, version)
 }
 
