@@ -62,7 +62,7 @@ func main() {
 	case "new":
 		err = newCmd(args)
 	case "to":
-		err = toCmd(args)
+		err = migrateToCmd(args)
 	case "latest":
 		err = latestCmd(args)
 	case "current":
@@ -165,7 +165,7 @@ func currentCmd(args arguments) error {
 	return nil
 }
 
-func toCmd(args arguments) error {
+func migrateToCmd(args arguments) error {
 	gl, err := setupGloat(args)
 	if err != nil {
 		return err

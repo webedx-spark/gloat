@@ -12,8 +12,6 @@ import (
 )
 
 var (
-	now = time.Now().UTC()
-
 	ErrNotFound      = errors.New("version not found")
 	nameNormalizerRe = regexp.MustCompile(`([a-z])([A-Z])`)
 	versionFormat    = "20060102150405"
@@ -91,7 +89,7 @@ func MigrationFromBytes(path string, read func(string) ([]byte, error)) (*Migrat
 		Path:      path,
 		Version:   version,
 		Options:   options,
-		AppliedAt: time.Now(),
+		AppliedAt: time.Now().UTC(),
 	}, nil
 }
 
@@ -101,7 +99,7 @@ func generateMigrationPath(version int64, str string) string {
 }
 
 func generateVersion() int64 {
-	version, _ := strconv.ParseInt(now.Format(versionFormat), 10, 64)
+	version, _ := strconv.ParseInt(time.Now().UTC().Format(versionFormat), 10, 64)
 	return version
 }
 
@@ -118,24 +116,26 @@ func versionFromPath(path string) (int64, error) {
 type Migrations []*Migration
 
 // Except selects migrations that does not exist in the current ones.
-func (m Migrations) Except(migrations Migrations) (excepted Migrations) {
+// NB: other should be full migrations (e.g. from source)
+// the ones from store are only metadata migrations (they don't include SQL statements)
+func (m Migrations) Except(other Migrations) (result Migrations) {
 	// Mark the current transactions.
 	current := make(map[int64]time.Time)
-	for _, migration := range m {
-		current[migration.Version] = migration.AppliedAt
+	for _, migrationMetadata := range m {
+		current[migrationMetadata.Version] = migrationMetadata.AppliedAt
 	}
 
 	// Mark the ones in the migrations set, which we do have to get.
 	new := make(map[int64]time.Time)
-	for _, migration := range migrations {
-		new[migration.Version] = migration.AppliedAt
+	for _, fullMigration := range other {
+		new[fullMigration.Version] = fullMigration.AppliedAt
 	}
 
-	for _, migration := range migrations {
-		_, will := new[migration.Version]
-		_, has := current[migration.Version]
+	for _, fullMigration := range other {
+		_, will := new[fullMigration.Version]
+		_, has := current[fullMigration.Version]
 		if will && !has {
-			excepted = append(excepted, migration)
+			result = append(result, fullMigration)
 		}
 	}
 
@@ -143,25 +143,27 @@ func (m Migrations) Except(migrations Migrations) (excepted Migrations) {
 }
 
 // Intersect selects migrations that does exist in the current ones.
-func (m Migrations) Intersect(migrations Migrations) (intersect Migrations) {
+// NB: other should be full migrations (e.g. from source)
+// the ones from store are only metadata migrations (they don't include SQL statements)
+func (m Migrations) Intersect(other Migrations) (result Migrations) {
 	// Mark the current transactions.
 	store := make(map[int64]time.Time)
-	for _, migration := range m {
-		store[migration.Version] = migration.AppliedAt
+	for _, migrationMetadata := range m {
+		store[migrationMetadata.Version] = migrationMetadata.AppliedAt
 	}
 
 	// Mark the ones in the migrations set, which we do have to get.
 	source := make(map[int64]time.Time)
-	for _, migration := range migrations {
-		source[migration.Version] = migration.AppliedAt
+	for _, fullMigration := range other {
+		source[fullMigration.Version] = fullMigration.AppliedAt
 	}
 
-	for _, migration := range migrations {
-		_, will := source[migration.Version]
-		appliedAt, has := store[migration.Version]
+	for _, fullMigration := range other {
+		_, will := source[fullMigration.Version]
+		appliedAt, has := store[fullMigration.Version]
 		if will && has {
-			migration.AppliedAt = appliedAt
-			intersect = append(intersect, migration)
+			fullMigration.AppliedAt = appliedAt
+			result = append(result, fullMigration)
 		}
 	}
 
@@ -211,12 +213,12 @@ func AppliedAfter(store Source, source Source, version int64) (Migrations, error
 	}
 
 	found := false
-	for _, migration := range appliedMigrations {
-		if migration.Version == version {
+	for i := 0; i <= len(appliedMigrations); i++ {
+		if appliedMigrations[i].Version == version {
 			found = true
 			break
 		}
-		appliedAfter = append(appliedAfter, migration)
+		appliedAfter = append(appliedAfter, appliedMigrations[i])
 	}
 
 	if !found {
