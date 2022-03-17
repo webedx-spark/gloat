@@ -13,6 +13,7 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -143,6 +144,31 @@ func TestCurrent(t *testing.T) {
 
 	assert.NotNil(t, migration)
 	assert.Equal(t, int64(20170329154959), migration.Version)
+}
+
+func TestAppliedAfter(t *testing.T) {
+	gl.Source = &testingStore{
+		applied: Migrations{
+			&Migration{Version: 20190329154959, DownSQL: []byte("some sql here")},
+			&Migration{Version: 20180329154959},
+			&Migration{Version: 20170329154959},
+		},
+	}
+	gl.Store = &testingStore{
+		applied: Migrations{
+			&Migration{Version: 20190329154959},
+			&Migration{Version: 20180329154959},
+			&Migration{Version: 20170329154959},
+		},
+	}
+
+	migrations, err := gl.AppliedAfter(20180329154959)
+	assert.Nil(t, err)
+
+	assert.NotNil(t, migrations)
+	require.Len(t, migrations, 1)
+	assert.Equal(t, int64(20190329154959), migrations[0].Version)
+	assert.True(t, migrations[0].Reversible())
 }
 
 func TestLatest(t *testing.T) {

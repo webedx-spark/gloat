@@ -213,7 +213,7 @@ func AppliedAfter(store Source, source Source, version int64) (Migrations, error
 	}
 
 	found := false
-	for i := 0; i <= len(appliedMigrations); i++ {
+	for i := 0; i < len(appliedMigrations); i++ {
 		if appliedMigrations[i].Version == version {
 			found = true
 			break
