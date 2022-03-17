@@ -138,6 +138,8 @@ func presentCmd(args arguments) error {
 		return err
 	}
 
+	migrations.Sort()
+
 	for i, m := range migrations {
 		fmt.Printf("%d", m.Version)
 		if i != len(migrations)-1 {
