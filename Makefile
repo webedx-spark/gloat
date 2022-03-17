@@ -9,7 +9,7 @@ test:
 
 .PHONY: test.sqlite
 test.sqlite:
-	@env DATABASE_URL=sqlite3://:memory: go test ./...
+	@env DATABASE_SRC=testdata/migrations/ DATABASE_URL=sqlite3://:memory: go test ./...
 
 .PHONY: test.assets
 test.assets:

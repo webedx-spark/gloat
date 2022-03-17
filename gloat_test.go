@@ -10,9 +10,9 @@ import (
 
 	// Needed to establish database connections during testing.
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gsamokovarov/assert"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -90,9 +90,9 @@ func TestUnapplied(t *testing.T) {
 
 	migrations, err := gl.Unapplied()
 	assert.Nil(t, err)
-	assert.Len(t, 4, migrations)
+	assert.Len(t, migrations, 4)
 
-	assert.Equal(t, 20170329154959, migrations[0].Version)
+	assert.Equal(t, int64(20170329154959), migrations[0].Version)
 }
 
 func TestUnapplied_Empty(t *testing.T) {
@@ -108,7 +108,7 @@ func TestUnapplied_Empty(t *testing.T) {
 	migrations, err := gl.Unapplied()
 	assert.Nil(t, err)
 
-	assert.Len(t, 0, migrations)
+	assert.Len(t, migrations, 0)
 }
 
 func TestUnapplied_MissingInSource(t *testing.T) {
@@ -128,7 +128,7 @@ func TestUnapplied_MissingInSource(t *testing.T) {
 	migrations, err := gl.Unapplied()
 	assert.Nil(t, err)
 
-	assert.Len(t, 0, migrations)
+	assert.Len(t, migrations, 0)
 }
 
 func TestCurrent(t *testing.T) {
@@ -142,7 +142,23 @@ func TestCurrent(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.NotNil(t, migration)
-	assert.Equal(t, 20170329154959, migration.Version)
+	assert.Equal(t, int64(20170329154959), migration.Version)
+}
+
+func TestLatest(t *testing.T) {
+	gl.Source = &testingStore{
+		applied: Migrations{
+			&Migration{Version: 20190329154959},
+			&Migration{Version: 20180329154959},
+			&Migration{Version: 20170329154959},
+		},
+	}
+
+	migration, err := gl.Latest()
+	assert.Nil(t, err)
+
+	assert.NotNil(t, migration)
+	assert.Equal(t, int64(20190329154959), migration.Version)
 }
 
 func TestCurrent_Nil(t *testing.T) {

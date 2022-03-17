@@ -133,7 +133,7 @@ func NewMySQLStore(db SQLTransactor) Store {
 			DELETE FROM schema_migrations
 			WHERE version=?`,
 		selectAllMigrationsStatement: `
-			SELECT version, version_tag
+			SELECT version, applied_at
 			FROM schema_migrations
 			ORDER BY applied_at DESC, version DESC`,
 	}

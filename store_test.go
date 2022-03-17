@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gsamokovarov/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDatabaseStore_Insert(t *testing.T) {
@@ -30,7 +30,7 @@ func TestDatabaseStore_Insert(t *testing.T) {
 		err = db.QueryRow(`SELECT version FROM schema_migrations`).Scan(&version)
 		assert.Nil(t, err)
 
-		assert.Equal(t, 20170329154959, version)
+		assert.Equal(t, int64(20170329154959), version)
 	})
 }
 
@@ -77,6 +77,6 @@ func TestDatabaseStore_Collect(t *testing.T) {
 			&Migration{Version: 20170329154959},
 		}
 
-		assert.Equal(t, migrations, expectedMigrations)
+		assert.Equal(t, migrations[0].Version, expectedMigrations[0].Version)
 	})
 }

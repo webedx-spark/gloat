@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gsamokovarov/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSQLExecutor_Up(t *testing.T) {

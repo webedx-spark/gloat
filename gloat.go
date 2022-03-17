@@ -29,7 +29,7 @@ func (c *Gloat) AppliedAfter(version int64) (Migrations, error) {
 func (c *Gloat) Present() (Migrations, error) {
 	migrations, err := c.Source.Collect()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	migrations.Sort()
 	return migrations, nil
