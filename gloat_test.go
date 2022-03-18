@@ -162,11 +162,11 @@ func TestAppliedAfter(t *testing.T) {
 		},
 	}
 
-	migrations, err := gl.AppliedAfter(20180329154959)
+	migrations, err := gl.AppliedAfter(20170329154959)
 	assert.Nil(t, err)
 
 	assert.NotNil(t, migrations)
-	require.Len(t, migrations, 1)
+	require.Len(t, migrations, 2)
 	assert.Equal(t, int64(20190329154959), migrations[0].Version)
 	assert.True(t, migrations[0].Reversible())
 }

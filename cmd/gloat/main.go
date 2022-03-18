@@ -183,14 +183,11 @@ func migrateToCmd(args arguments) error {
 
 	migrations, err := gl.AppliedAfter(version)
 	if err != nil {
-		if err == gloat.ErrNotFound {
-			return upCmd(args)
-		}
 		return err
 	}
 
 	for _, migration := range migrations {
-		fmt.Printf("\nReverting: %d...\n", migration.Version)
+		fmt.Printf("Reverting: %d...\n", migration.Version)
 
 		if err := gl.Revert(migration); err != nil {
 			return err
