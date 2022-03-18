@@ -2,6 +2,7 @@ package gloat
 
 import (
 	"database/sql"
+	"time"
 )
 
 // Gloat glues all the components needed to apply and revert
@@ -86,6 +87,7 @@ func (c *Gloat) Current() (*Migration, error) {
 
 // Apply applies a migration.
 func (c *Gloat) Apply(migration *Migration) error {
+	migration.AppliedAt = time.Now().UTC()
 	return c.Executor.Up(migration, c.Store)
 }
 

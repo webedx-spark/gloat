@@ -199,6 +199,7 @@ func TestCurrent_Nil(t *testing.T) {
 func TestApply(t *testing.T) {
 	called := false
 
+	m := &Migration{}
 	gl.Store = &testingStore{}
 	gl.Executor = &stubbedExecutor{
 		up: func(*Migration, Store) error {
@@ -207,9 +208,10 @@ func TestApply(t *testing.T) {
 		},
 	}
 
-	gl.Apply(nil)
+	gl.Apply(m)
 
 	assert.True(t, called)
+	assert.NotEmpty(t, m.AppliedAt)
 }
 
 func TestRevert(t *testing.T) {
