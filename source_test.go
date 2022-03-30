@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gsamokovarov/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFileSystemSourceCollect(t *testing.T) {
@@ -38,7 +38,7 @@ func TestFileSystemSourceCollectEmpty(t *testing.T) {
 	migrations, err := fs.Collect()
 	assert.Nil(t, err)
 
-	assert.Len(t, 0, migrations)
+	assert.Len(t, migrations, 0)
 }
 
 func TestAssetSourceDoesNotBreakOnIrreversibleMigrations(t *testing.T) {
@@ -48,5 +48,5 @@ func TestAssetSourceDoesNotBreakOnIrreversibleMigrations(t *testing.T) {
 	migrations, err := fs.Collect()
 	assert.Nil(t, err)
 
-	assert.Len(t, 2, migrations)
+	assert.Len(t, migrations, 4)
 }

@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/gsamokovarov/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultMigrationOptions(t *testing.T) {

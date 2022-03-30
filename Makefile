@@ -1,7 +1,7 @@
 .PHONY: build
 build:
 	@mkdir -p bin
-	@go build -o bin/gloat github.com/gsamokovarov/gloat/cmd/gloat
+	@go build -o bin/gloat github.com/webedx-spark/gloat/cmd/gloat
 
 .PHONY: test
 test:
@@ -9,7 +9,7 @@ test:
 
 .PHONY: test.sqlite
 test.sqlite:
-	@env DATABASE_URL=sqlite3://:memory: go test ./...
+	@env DATABASE_SRC=testdata/migrations/ DATABASE_URL=sqlite3://:memory: go test ./...
 
 .PHONY: test.assets
 test.assets:

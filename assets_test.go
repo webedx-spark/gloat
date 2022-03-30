@@ -3,6 +3,11 @@
 // testdata/migrations/20170329154959_introduce_domain_model/down.sql
 // testdata/migrations/20170329154959_introduce_domain_model/up.sql
 // testdata/migrations/20170511172647_irreversible_migration_brah/up.sql
+// testdata/migrations/20180905150724_concurrent_migration/down.sql
+// testdata/migrations/20180905150724_concurrent_migration/options.json
+// testdata/migrations/20180905150724_concurrent_migration/up.sql
+// testdata/migrations/20180920181906_migration_with_an_error/down.sql
+// testdata/migrations/20180920181906_migration_with_an_error/up.sql
 // DO NOT EDIT!
 
 package gloat
@@ -85,7 +90,7 @@ func testdataMigrations20170329154959_introduce_domain_modelDownSql() (*asset, e
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "testdata/migrations/20170329154959_introduce_domain_model/down.sql", size: 18, mode: os.FileMode(420), modTime: time.Unix(1492188343, 0)}
+	info := bindataFileInfo{name: "testdata/migrations/20170329154959_introduce_domain_model/down.sql", size: 18, mode: os.FileMode(420), modTime: time.Unix(1646038365, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -105,7 +110,7 @@ func testdataMigrations20170329154959_introduce_domain_modelUpSql() (*asset, err
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "testdata/migrations/20170329154959_introduce_domain_model/up.sql", size: 266, mode: os.FileMode(420), modTime: time.Unix(1492775179, 0)}
+	info := bindataFileInfo{name: "testdata/migrations/20170329154959_introduce_domain_model/up.sql", size: 266, mode: os.FileMode(420), modTime: time.Unix(1646038365, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -125,7 +130,107 @@ func testdataMigrations20170511172647_irreversible_migration_brahUpSql() (*asset
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "testdata/migrations/20170511172647_irreversible_migration_brah/up.sql", size: 54, mode: os.FileMode(420), modTime: time.Unix(1494518694, 0)}
+	info := bindataFileInfo{name: "testdata/migrations/20170511172647_irreversible_migration_brah/up.sql", size: 54, mode: os.FileMode(420), modTime: time.Unix(1646038365, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testdataMigrations20180905150724_concurrent_migrationDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x01\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00")
+
+func testdataMigrations20180905150724_concurrent_migrationDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		_testdataMigrations20180905150724_concurrent_migrationDownSql,
+		"testdata/migrations/20180905150724_concurrent_migration/down.sql",
+	)
+}
+
+func testdataMigrations20180905150724_concurrent_migrationDownSql() (*asset, error) {
+	bytes, err := testdataMigrations20180905150724_concurrent_migrationDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "testdata/migrations/20180905150724_concurrent_migration/down.sql", size: 0, mode: os.FileMode(420), modTime: time.Unix(1646038365, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testdataMigrations20180905150724_concurrent_migrationOptionsJson = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xaa\xe6\xe2\x54\x2a\x29\x4a\xcc\x2b\x4e\x4c\x2e\xc9\xcc\xcf\x53\xb2\x52\x48\x4b\xcc\x29\x4e\xe5\xaa\xe5\x02\x04\x00\x00\xff\xff\x0e\x77\x70\x04\x1a\x00\x00\x00")
+
+func testdataMigrations20180905150724_concurrent_migrationOptionsJsonBytes() ([]byte, error) {
+	return bindataRead(
+		_testdataMigrations20180905150724_concurrent_migrationOptionsJson,
+		"testdata/migrations/20180905150724_concurrent_migration/options.json",
+	)
+}
+
+func testdataMigrations20180905150724_concurrent_migrationOptionsJson() (*asset, error) {
+	bytes, err := testdataMigrations20180905150724_concurrent_migrationOptionsJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "testdata/migrations/20180905150724_concurrent_migration/options.json", size: 26, mode: os.FileMode(420), modTime: time.Unix(1646038365, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testdataMigrations20180905150724_concurrent_migrationUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x01\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00")
+
+func testdataMigrations20180905150724_concurrent_migrationUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		_testdataMigrations20180905150724_concurrent_migrationUpSql,
+		"testdata/migrations/20180905150724_concurrent_migration/up.sql",
+	)
+}
+
+func testdataMigrations20180905150724_concurrent_migrationUpSql() (*asset, error) {
+	bytes, err := testdataMigrations20180905150724_concurrent_migrationUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "testdata/migrations/20180905150724_concurrent_migration/up.sql", size: 0, mode: os.FileMode(420), modTime: time.Unix(1646038365, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testdataMigrations20180920181906_migration_with_an_errorDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x08\x71\x74\xf2\x51\x28\x2d\x4e\x2d\x2a\xb6\xe6\x02\x04\x00\x00\xff\xff\x6b\x44\xa8\xf8\x11\x00\x00\x00")
+
+func testdataMigrations20180920181906_migration_with_an_errorDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		_testdataMigrations20180920181906_migration_with_an_errorDownSql,
+		"testdata/migrations/20180920181906_migration_with_an_error/down.sql",
+	)
+}
+
+func testdataMigrations20180920181906_migration_with_an_errorDownSql() (*asset, error) {
+	bytes, err := testdataMigrations20180920181906_migration_with_an_errorDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "testdata/migrations/20180920181906_migration_with_an_error/down.sql", size: 17, mode: os.FileMode(420), modTime: time.Unix(1646038365, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testdataMigrations20180920181906_migration_with_an_errorUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x0e\x72\x75\x0c\x71\x55\x08\x71\x74\xf2\x51\x28\x2d\x4e\x2d\x2a\x56\xd0\xe0\x52\x50\x50\x50\xc8\x4c\x51\x48\xca\x4c\x2f\x4e\x2d\xca\x4c\xcc\x51\x08\x08\xf2\xf4\x75\x0c\x8a\x54\xf0\x76\x8d\x54\xf0\xf3\x0f\x51\xf0\x0b\xf5\xf1\xe1\xd2\xb4\xe6\xe2\x02\x04\x00\x00\xff\xff\x59\x13\xa0\x89\x3e\x00\x00\x00")
+
+func testdataMigrations20180920181906_migration_with_an_errorUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		_testdataMigrations20180920181906_migration_with_an_errorUpSql,
+		"testdata/migrations/20180920181906_migration_with_an_error/up.sql",
+	)
+}
+
+func testdataMigrations20180920181906_migration_with_an_errorUpSql() (*asset, error) {
+	bytes, err := testdataMigrations20180920181906_migration_with_an_errorUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "testdata/migrations/20180920181906_migration_with_an_error/up.sql", size: 62, mode: os.FileMode(420), modTime: time.Unix(1646038365, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -185,6 +290,11 @@ var _bindata = map[string]func() (*asset, error){
 	"testdata/migrations/20170329154959_introduce_domain_model/down.sql": testdataMigrations20170329154959_introduce_domain_modelDownSql,
 	"testdata/migrations/20170329154959_introduce_domain_model/up.sql": testdataMigrations20170329154959_introduce_domain_modelUpSql,
 	"testdata/migrations/20170511172647_irreversible_migration_brah/up.sql": testdataMigrations20170511172647_irreversible_migration_brahUpSql,
+	"testdata/migrations/20180905150724_concurrent_migration/down.sql": testdataMigrations20180905150724_concurrent_migrationDownSql,
+	"testdata/migrations/20180905150724_concurrent_migration/options.json": testdataMigrations20180905150724_concurrent_migrationOptionsJson,
+	"testdata/migrations/20180905150724_concurrent_migration/up.sql": testdataMigrations20180905150724_concurrent_migrationUpSql,
+	"testdata/migrations/20180920181906_migration_with_an_error/down.sql": testdataMigrations20180920181906_migration_with_an_errorDownSql,
+	"testdata/migrations/20180920181906_migration_with_an_error/up.sql": testdataMigrations20180920181906_migration_with_an_errorUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -235,6 +345,15 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			}},
 			"20170511172647_irreversible_migration_brah": &bintree{nil, map[string]*bintree{
 				"up.sql": &bintree{testdataMigrations20170511172647_irreversible_migration_brahUpSql, map[string]*bintree{}},
+			}},
+			"20180905150724_concurrent_migration": &bintree{nil, map[string]*bintree{
+				"down.sql": &bintree{testdataMigrations20180905150724_concurrent_migrationDownSql, map[string]*bintree{}},
+				"options.json": &bintree{testdataMigrations20180905150724_concurrent_migrationOptionsJson, map[string]*bintree{}},
+				"up.sql": &bintree{testdataMigrations20180905150724_concurrent_migrationUpSql, map[string]*bintree{}},
+			}},
+			"20180920181906_migration_with_an_error": &bintree{nil, map[string]*bintree{
+				"down.sql": &bintree{testdataMigrations20180920181906_migration_with_an_errorDownSql, map[string]*bintree{}},
+				"up.sql": &bintree{testdataMigrations20180920181906_migration_with_an_errorUpSql, map[string]*bintree{}},
 			}},
 		}},
 	}},

@@ -8,9 +8,10 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
-	"github.com/gsamokovarov/gloat"
+	"github.com/webedx-spark/gloat"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -22,13 +23,17 @@ const usage = `Usage gloat: [OPTION ...] [COMMAND ...]
 Gloat is a Go SQL migration utility.
 
 Commands:
-  new           Create a new migration folder
-  up            Apply new migrations
-  down          Revert the last applied migration
+  new                      Create a new migration folder
+  up                       Apply new migrations
+  down                     Revert the last applied migration
+  to <version>             Migrate to a given version (down to).
+  latest                   Latest migration in the source.
+  current                  Latest Applied migration.
+  present                  List all present versions.
 
 Options:
   -src          The folder with migrations
-                (default $DATABASE_SRC or db/migrations)
+                (default $DATABASE_SRC or database/migrations)
   -url          The database connection URL
                 (default $DATABASE_URL)
   -help         Show this message
@@ -56,6 +61,14 @@ func main() {
 		err = downCmd(args)
 	case "new":
 		err = newCmd(args)
+	case "to":
+		err = migrateToCmd(args)
+	case "latest":
+		err = latestCmd(args)
+	case "current":
+		err = currentCmd(args)
+	case "present":
+		err = presentCmd(args)
 	default:
 		fmt.Fprintf(os.Stderr, usage)
 		os.Exit(2)
@@ -97,6 +110,96 @@ func upCmd(args arguments) error {
 	return nil
 }
 
+func latestCmd(args arguments) error {
+	gl, err := setupGloat(args)
+	if err != nil {
+		return err
+	}
+
+	latest, err := gl.Latest()
+	if err != nil {
+		return err
+	}
+
+	if latest != nil {
+		fmt.Printf("%d", latest.Version)
+	}
+	return nil
+}
+
+func presentCmd(args arguments) error {
+	gl, err := setupGloat(args)
+	if err != nil {
+		return err
+	}
+
+	migrations, err := gl.Present()
+	if err != nil {
+		return err
+	}
+
+	migrations.Sort()
+
+	for i, m := range migrations {
+		fmt.Printf("%d", m.Version)
+		if i != len(migrations)-1 {
+			fmt.Print(",")
+		}
+	}
+
+	return nil
+}
+
+func currentCmd(args arguments) error {
+	gl, err := setupGloat(args)
+	if err != nil {
+		return err
+	}
+
+	current, err := gl.Current()
+	if err != nil {
+		return err
+	}
+
+	if current != nil {
+		fmt.Printf("%d", current.Version)
+	}
+	return nil
+}
+
+func migrateToCmd(args arguments) error {
+	gl, err := setupGloat(args)
+	if err != nil {
+		return err
+	}
+	if len(args.rest) < 2 {
+		return errors.New("migrate to requires a version to migrate to")
+	}
+
+	version, err := strconv.ParseInt(args.rest[1], 10, 64)
+	if err != nil {
+		return err
+	}
+
+	migrations, err := gl.AppliedAfter(version)
+	if err != nil {
+		if err == gloat.ErrNotFound {
+			return upCmd(args)
+		}
+		return err
+	}
+
+	for _, migration := range migrations {
+		fmt.Printf("\nReverting: %d...\n", migration.Version)
+
+		if err := gl.Revert(migration); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func downCmd(args arguments) error {
 	gl, err := setupGloat(args)
 	if err != nil {
@@ -109,7 +212,7 @@ func downCmd(args arguments) error {
 	}
 
 	if migration == nil {
-		fmt.Printf("No migrations to apply\n")
+		fmt.Printf("No migrations to revert\n")
 		return nil
 	}
 
@@ -163,7 +266,7 @@ func parseArguments() arguments {
 
 	srcDefault := os.Getenv("DATABASE_SRC")
 	if srcDefault == "" {
-		srcDefault = "db/migrations"
+		srcDefault = "database/migrations"
 	}
 	srcUsage := `the folder with migrations`
 
