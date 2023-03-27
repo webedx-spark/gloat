@@ -211,11 +211,11 @@ func downCmd(args arguments) error {
 	}
 
 	if migration == nil {
-		printf("No migrations to revert\n")
+		printf(args, "No migrations to revert\n")
 		return nil
 	}
 
-	printf("Reverting: %d...\n", migration.Version)
+	printf(args, "Reverting: %d...\n", migration.Version)
 
 	if err := gl.Revert(migration); err != nil {
 		return err
@@ -252,7 +252,7 @@ func newCmd(args arguments) error {
 	}
 	f.Close()
 
-	printf("Created %s\n", migrationDirectoryPath)
+	printf(args, "Created %s\n", migrationDirectoryPath)
 
 	return nil
 }
