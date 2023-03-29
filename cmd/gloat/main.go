@@ -32,6 +32,7 @@ Commands:
   present                  List all present versions.
 
 Options:
+  -quiet        Output only errors
   -src          The folder with migrations
                 (default $DATABASE_SRC or database/migrations)
   -url          The database connection URL
@@ -40,9 +41,10 @@ Options:
 `
 
 type arguments struct {
-	url  string
-	src  string
-	rest []string
+	url   string
+	src   string
+	quiet bool
+	rest  []string
 }
 
 func main() {
@@ -94,7 +96,7 @@ func upCmd(args arguments) error {
 	appliedMigrations := map[int64]bool{}
 
 	for _, migration := range migrations {
-		fmt.Printf("Applying: %d...\n", migration.Version)
+		printf(args, "Applying: %d...\n", migration.Version)
 
 		if err := gl.Apply(migration); err != nil {
 			return err
@@ -104,7 +106,7 @@ func upCmd(args arguments) error {
 	}
 
 	if len(appliedMigrations) == 0 {
-		fmt.Printf("No migrations to apply\n")
+		printf(args, "No migrations to apply\n")
 	}
 
 	return nil
@@ -187,7 +189,7 @@ func migrateToCmd(args arguments) error {
 	}
 
 	for _, migration := range migrations {
-		fmt.Printf("Reverting: %d...\n", migration.Version)
+		printf(args, "Reverting: %d...\n", migration.Version)
 
 		if err := gl.Revert(migration); err != nil {
 			return err
@@ -209,11 +211,11 @@ func downCmd(args arguments) error {
 	}
 
 	if migration == nil {
-		fmt.Printf("No migrations to revert\n")
+		printf(args, "No migrations to revert\n")
 		return nil
 	}
 
-	fmt.Printf("Reverting: %d...\n", migration.Version)
+	printf(args, "Reverting: %d...\n", migration.Version)
 
 	if err := gl.Revert(migration); err != nil {
 		return err
@@ -250,7 +252,7 @@ func newCmd(args arguments) error {
 	}
 	f.Close()
 
-	fmt.Printf("Created %s\n", migrationDirectoryPath)
+	printf(args, "Created %s\n", migrationDirectoryPath)
 
 	return nil
 }
@@ -269,6 +271,7 @@ func parseArguments() arguments {
 
 	flag.StringVar(&args.url, "url", urlDefault, urlUsage)
 	flag.StringVar(&args.src, "src", srcDefault, srcUsage)
+	flag.BoolVar(&args.quiet, "quiet", false, "Output only errors")
 
 	flag.Usage = func() { fmt.Fprintf(os.Stderr, usage) }
 
@@ -313,4 +316,9 @@ func databaseStoreFactory(driver string, db *sql.DB) (gloat.Store, error) {
 	}
 
 	return nil, errors.New("unsupported database driver " + driver)
+}
+func printf(args arguments, str string, subs ...interface{}) {
+	if args.quiet != true {
+		fmt.Printf(str, subs...)
+	}
 }
